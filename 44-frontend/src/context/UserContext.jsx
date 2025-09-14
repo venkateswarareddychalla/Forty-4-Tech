@@ -55,8 +55,8 @@ export const UserContextProvider = ({ children }) => {
 
   const updateUser = async (id, userData) => {
     try {
-      const updatedUser = await apiUpdateUser(id, userData);
-      setUsers((prev) => prev.map(user => user.id === id ? updatedUser : user));
+      await apiUpdateUser(id, userData);
+      setUsers((prev) => prev.map(user => user.id === id ? { id, ...userData } : user));
     } catch (err) {
       setError(err.message);
       throw err;

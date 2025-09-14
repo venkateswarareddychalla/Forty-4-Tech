@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchUserById } from "../api/userService";
+import { useUserContext } from "../context/UserContext";
 import Header from "../components/Header";
+import UserForm from "../components/UserForm";
 import { IoArrowBack } from "react-icons/io5";
 import { FiEdit, FiTrash2 } from "react-icons/fi";
-import { useUserContext } from "../context/UserContext";
+import { toast } from "react-toastify";
 
 const UserDetailsPage = () => {
   const { id } = useParams();
+  const { users, updateUser, deleteUser } = useUserContext();
   const navigate = useNavigate();
-  const { updateUser, deleteUser } = useUserContext();
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [newUser, setNewUser] = useState({ name: '', username: '', email: '', phone: '', website: '', address: { street: '', suite: '', city: '', zipcode: '', geo: { lat: '', lng: '' } }, company: { name: '', catchPhrase: '', bs: '' } });
 
   useEffect(() => {
     const loadUser = async () => {
@@ -28,18 +34,47 @@ const UserDetailsPage = () => {
     loadUser();
   }, [id]);
 
-  const handleEdit = () => {
-    const newName = prompt("Enter new name:", user.name);
-    if (newName && newName !== user.name) {
-      updateUser(id, { name: newName }).then((updated) => setUser(updated));
+  useEffect(() => {
+    if (user) {
+      setNewUser({
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        website: user.website,
+        address: { ...user.address },
+        company: { ...user.company }
+      });
+    }
+  }, [user]);
+
+  const handleSubmitUser = async (e) => {
+    e.preventDefault();
+    try {
+      await updateUser(id, newUser);
+      // Refetch user data after update
+      const response = await fetchUserById(id);
+      setUser(response.data || response);
+      toast.success("User updated successfully!");
+      setShowForm(false);
+    } catch (error) {
+      toast.error(`Failed to update user: ${error.message}`);
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      deleteUser(id).then(() => navigate("/"));
+  const handleDeleteUser = async () => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this user?");
+    if (!confirmDelete) return;
+    try {
+      await deleteUser(id);
+      toast.success("User deleted successfully!");
+      navigate("/");
+    } catch {
+      toast.error("Failed to delete user!");
     }
   };
+
+
 
   if (loading) return <div className="text-center py-8">Loading...</div>;
   if (error)
@@ -57,7 +92,7 @@ const UserDetailsPage = () => {
         <nav aria-label="Breadcrumb" className="mb-4">
           <Link
             to="/"
-            className="text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors flex items-center"
+            className="text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-0 transition-colors flex items-center"
           >
             <IoArrowBack className="mr-2" /> Back to Dashboard
           </Link>
@@ -79,18 +114,21 @@ const UserDetailsPage = () => {
                 {user.name}
               </h1>
             </div>
-            <div className="space-x-3">
+            <div className="flex gap-4">
               <button
-                onClick={handleEdit}
-                aria-label="Edit user"
-                className="text-blue-500 hover:text-blue-700 focus:outline-none"
+                onClick={() => {
+                  setShowForm(true);
+                  setErrors({});
+                }}
+                aria-label="Edit User"
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-600"
               >
                 <FiEdit size={24} />
               </button>
               <button
-                onClick={handleDelete}
-                aria-label="Delete user"
-                className="text-red-500 hover:text-red-700 focus:outline-none"
+                onClick={handleDeleteUser}
+                aria-label="Delete User"
+                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
               >
                 <FiTrash2 size={24} />
               </button>
@@ -183,6 +221,22 @@ const UserDetailsPage = () => {
             </div>
           </div>
         </article>
+        {showForm && (
+          <UserForm
+            newUser={newUser}
+            setNewUser={setNewUser}
+            handleSubmitUser={handleSubmitUser}
+            isEditing={true}
+            onCancel={() => {
+              setShowForm(false);
+              setErrors({});
+            }}
+            users={users}
+            editingUser={user}
+            errors={errors}
+            setErrors={setErrors}
+          />
+        )}
       </main>
     </div>
   );

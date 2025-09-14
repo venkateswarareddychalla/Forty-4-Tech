@@ -10,6 +10,8 @@ const DashboardPage = () => {
   const { users, loading, error, addUser, deleteUser, updateUser } = useUserContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [newUser, setNewUser] = useState({ name: '', username: '', email: '', phone: '', website: '', address: { street: '', suite: '', city: '', zipcode: '', geo: { lat: '', lng: '' } }, company: { name: '', catchPhrase: '', bs: '' } });
+  const [errors, setErrors] = useState({});
+
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -21,6 +23,39 @@ const DashboardPage = () => {
   const handleSubmitUser = async (e) => {
     e.preventDefault();
     if (newUser.name && newUser.email) {
+      let hasErrors = false;
+      const newErrors = {};
+
+      // Check for duplicate email before submitting
+      const existingEmailUser = users.find(u => u.email.toLowerCase() === newUser.email.toLowerCase());
+      if (existingEmailUser && (!isEditing || existingEmailUser.id !== editingUser.id)) {
+        newErrors.email = "This email is already taken";
+        toast.error("This email is already taken");
+        hasErrors = true;
+      }
+
+      // Check for duplicate username before submitting
+      const existingUsernameUser = users.find(u => u.username.toLowerCase() === newUser.username.toLowerCase());
+      if (existingUsernameUser && (!isEditing || existingUsernameUser.id !== editingUser.id)) {
+        newErrors.username = "This username is already taken";
+        toast.error("This username is already taken");
+        hasErrors = true;
+      }
+
+      // Check for duplicate phone before submitting
+      const existingPhoneUser = users.find(u => u.phone === newUser.phone);
+      if (existingPhoneUser && (!isEditing || existingPhoneUser.id !== editingUser.id)) {
+        newErrors.phone = "This phone number is already taken";
+        toast.error("This phone number is already taken");
+        hasErrors = true;
+      }
+
+      setErrors(newErrors);
+
+      if (hasErrors) {
+        return;
+      }
+
       try {
         const userPayload = newUser;
         if (isEditing) {
@@ -31,6 +66,7 @@ const DashboardPage = () => {
           toast.success("User added successfully!");
         }
         setNewUser({ name: '', username: '', email: '', phone: '', website: '', address: { street: '', suite: '', city: '', zipcode: '', geo: { lat: '', lng: '' } }, company: { name: '', catchPhrase: '', bs: '' } });
+        setErrors({});
         setShowForm(false);
         setIsEditing(false);
         setEditingUser(null);
@@ -67,6 +103,7 @@ const DashboardPage = () => {
         bs: user.company.bs
       }
     });
+    setErrors({});
     setIsEditing(true);
     setEditingUser(user);
     setShowForm(true);
@@ -99,6 +136,7 @@ const DashboardPage = () => {
               setIsEditing(false);
               setEditingUser(null);
               setNewUser({ name: '', username: '', email: '', phone: '', website: '', address: { street: '', suite: '', city: '', zipcode: '', geo: { lat: '', lng: '' } }, company: { name: '', catchPhrase: '', bs: '' } });
+              setErrors({});
             }}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors cursor-pointer"
             aria-controls="add-user-form"
@@ -107,14 +145,14 @@ const DashboardPage = () => {
           </button>
         </div>
 
-        {filteredUsers.length > 0 && (
+        {users.length > 0 && (
           <div className="mb-6 flex justify-center">
             <div className="relative">
               <label htmlFor="search-users" className="sr-only">Search users by name</label>
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 id="search-users"
-                type="text"
+                type="search"
                 placeholder="Search users by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -137,13 +175,22 @@ const DashboardPage = () => {
               setIsEditing(false);
               setEditingUser(null);
               setNewUser({ name: '', username: '', email: '', phone: '', website: '', address: { street: '', suite: '', city: '', zipcode: '', geo: { lat: '', lng: '' } }, company: { name: '', catchPhrase: '', bs: '' } });
+              setErrors({});
             }}
+            users={users}
+            editingUser={editingUser}
+            errors={errors}
+            setErrors={setErrors}
           />
         )}
 
-        {filteredUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="flex justify-center items-center min-h-[200px]">
             <p className="text-center text-gray-600 dark:text-gray-400 text-lg">No users found.</p>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <p className="text-center text-gray-600 dark:text-gray-400 text-lg">No users found from your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
