@@ -57,7 +57,12 @@ This project is a full-stack user management application that allows adding, edi
 
 ---
 
-## Running the Project
+## Deployed URLs
+
+- **Frontend**: https://forty-4-tech-frontend.onrender.com
+- **Backend**: https://forty-4-tech-backend.onrender.com
+
+## Running the Project Locally
 
 ### Backend
 1. Navigate to `44-backend` folder.
