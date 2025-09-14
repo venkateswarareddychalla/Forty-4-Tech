@@ -46,7 +46,7 @@ export const UserContextProvider = ({ children }) => {
   const deleteUser = async (id) => {
     try {
       await apiDeleteUser(id);
-      setUsers((prev) => prev.filter(user => user.id !== id));
+      setUsers((prev) => prev.filter(user => user.id !== parseInt(id)));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -56,7 +56,8 @@ export const UserContextProvider = ({ children }) => {
   const updateUser = async (id, userData) => {
     try {
       await apiUpdateUser(id, userData);
-      setUsers((prev) => prev.map(user => user.id === id ? { id, ...userData } : user));
+      const userId = parseInt(id);
+      setUsers((prev) => prev.map(user => user.id === userId ? { id: userId, ...userData } : user));
     } catch (err) {
       setError(err.message);
       throw err;
